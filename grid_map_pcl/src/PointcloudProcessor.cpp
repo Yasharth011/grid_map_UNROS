@@ -19,7 +19,7 @@
 #include <pcl/point_types.h>
 #include <pcl/segmentation/extract_clusters.h>
 
-#include <ros/console.h>
+#include <spglog/spdlog.h>
 
 namespace grid_map {
 namespace grid_map_pcl {

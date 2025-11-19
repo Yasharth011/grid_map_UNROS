@@ -1,6 +1,5 @@
 /*
  * PclLoaderParameters.cpp
- *
  *  Created on: Nov 7, 2019
  *      Author: Edo Jelavic
  *      Institute: ETH Zurich, Robotic Systems Lab
@@ -8,7 +7,7 @@
 
 #include "grid_map_pcl/PclLoaderParameters.hpp"
 
-#include <ros/console.h>
+#include <spdlog/spdlog.h>
 
 namespace grid_map {
 
@@ -50,7 +49,7 @@ bool PclLoaderParameters::loadParameters(const std::string& filename) {
 
   const bool loadingFailed = yamlNode.IsNull();
   if (loadingFailed) {
-    ROS_ERROR_STREAM("PclLoaderParameters: Reading from file failed");
+	  spdlog::error("PclLoaderParameters: Reading from file failed");
     return false;
   }
 
@@ -58,7 +57,7 @@ bool PclLoaderParameters::loadParameters(const std::string& filename) {
     const std::string prefix{"pcl_grid_map_extraction"};
     loadParameters(yamlNode[prefix]);
   } catch (const std::runtime_error& exception) {
-    ROS_ERROR_STREAM("PclLoaderParameters: Loading parameters failed: " << exception.what());
+	  spdlog::error("PclLoaderParameters: Loading parameters failed: {} ", exception.what());
     return false;
   }
 

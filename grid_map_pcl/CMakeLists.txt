@@ -14,20 +14,17 @@ set(SRC_FILES
   src/PointcloudProcessor.cpp
 )
 
-set(CATKIN_PACKAGE_DEPENDENCIES  
-  grid_map_core
-  grid_map_msgs
-  grid_map_ros
-  pcl_ros
-  roscpp
-)
-
+# Find OpenMP (optional for parallelization)
 find_package(OpenMP QUIET)
 if (OpenMP_FOUND)
   add_compile_options("${OpenMP_CXX_FLAGS}")
   add_definitions(-DGRID_MAP_PCL_OPENMP_FOUND=${OpenMP_FOUND})
 endif()
 
+# Find Eigen3
+find_package(Eigen3 REQUIRED)
+
+# Find PCL
 find_package(PCL REQUIRED
   COMPONENTS
     common
@@ -39,158 +36,118 @@ find_package(PCL REQUIRED
     surface
 )
 
-## Find catkin macros and libraries
-find_package(catkin REQUIRED 
-  COMPONENTS
-    ${CATKIN_PACKAGE_DEPENDENCIES}
-)
+# Find yaml-cpp
+find_package(yaml-cpp REQUIRED)
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-  INCLUDE_DIRS
-    include
-  LIBRARIES
-    ${PROJECT_NAME}
-    yaml-cpp
-  CATKIN_DEPENDS
-    ${CATKIN_PACKAGE_DEPENDENCIES}
-  DEPENDS
-    PCL
-)
+# Find grid_map_core (assuming it's installed or available)
+find_package(grid_map_core REQUIRED)
 
 ###########
 ## Build ##
 ###########
 
-# Library.
+# Library
 add_library(${PROJECT_NAME}
   ${SRC_FILES}
 )
-add_dependencies(${PROJECT_NAME}
-  ${catkin_EXPORTED_TARGETS}
-)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
   include
 )
+
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
-  ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${OpenMP_CXX_INCLUDE_DIRS}
-  ${PCL_COMMON_INCLUDE_DIRS}
-  ${PCL_FEATURES_INCLUDE_DIRS}
-  ${PCL_FILTERS_INCLUDE_DIRS}
-  ${PCL_IO_INCLUDE_DIRS}
-  ${PCL_KDTREE_INCLUDE_DIRS}
-  ${PCL_SEGMENTATION_INCLUDE_DIRS}
-  ${PCL_SURFACE_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIRS}
 )
+
 target_link_libraries(${PROJECT_NAME}
-  ${catkin_LIBRARIES}
+  grid_map_core
   ${OpenMP_CXX_LIBRARIES}
+  ${PCL_LIBRARIES}
   yaml-cpp
 )
 
-
-# Nodes.
-add_executable(grid_map_pcl_loader_node
-  src/grid_map_pcl_loader_node.cpp
-)
-add_dependencies(grid_map_pcl_loader_node
-  ${PROJECT_NAME}
-)
-target_include_directories(grid_map_pcl_loader_node PRIVATE
-  include
-)
-target_include_directories(grid_map_pcl_loader_node SYSTEM PUBLIC
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
-)
-target_link_libraries(grid_map_pcl_loader_node
-  ${PROJECT_NAME}
-  ${catkin_LIBRARIES}
-)
-
-add_executable(pointcloud_publisher_node
-  src/pointcloud_publisher_node.cpp
-)
-add_dependencies(pointcloud_publisher_node
-  ${PROJECT_NAME}
-)
-target_include_directories(pointcloud_publisher_node PRIVATE
-  include
-)
-target_include_directories(pointcloud_publisher_node SYSTEM PUBLIC
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
-)
-target_link_libraries(pointcloud_publisher_node
-  ${PROJECT_NAME}
-  ${catkin_LIBRARIES}
+# Set library properties for installation
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  VERSION 1.0.0
+  SOVERSION 1
+  PUBLIC_HEADER "include/${PROJECT_NAME}/GridMapPclConverter.hpp;include/${PROJECT_NAME}/GridMapPclLoader.hpp;include/${PROJECT_NAME}/helpers.hpp;include/${PROJECT_NAME}/PclLoaderParameters.hpp;include/${PROJECT_NAME}/PointcloudProcessor.hpp"
 )
 
 #############
 ## Install ##
 #############
+
+include(GNUInstallDirs)
+
 install(
-  TARGETS
-    ${PROJECT_NAME}
-    grid_map_pcl_loader_node
-    pointcloud_publisher_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-install(
-  DIRECTORY 
-    include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.hpp"
-)
-install(
-  DIRECTORY
-    doc
-    config
-    launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-install(
-  DIRECTORY
-    test
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-  FILES_MATCHING PATTERN "*.pcd"
-)
-install(
-  FILES
-    README.md
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}Targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
 )
 
+install(
+  DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.hpp"
+)
+
+install(
+  DIRECTORY config doc
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+)
+
+install(
+  FILES README.md
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+)
+
+# Export targets for downstream projects
+install(
+  EXPORT ${PROJECT_NAME}Targets
+  FILE ${PROJECT_NAME}Targets.cmake
+  NAMESPACE grid_map::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
+
+# Create and install package config file
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+  VERSION 1.0.0
+  COMPATIBILITY SameMajorVersion
+)
+
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
 
 #############
 ## Testing ##
 #############
 
-if(CATKIN_ENABLE_TESTING)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+option(BUILD_TESTING "Build tests" OFF)
 
-  find_package(catkin REQUIRED
-    COMPONENTS
-      ${CATKIN_PACKAGE_DEPENDENCIES}
-      roslaunch
-  )
+if(BUILD_TESTING)
+  enable_testing()
+  find_package(GTest REQUIRED)
 
-  roslaunch_add_file_check(launch)
-
-  ## Add gtest based cpp test target and link libraries
-  catkin_add_gtest(${PROJECT_NAME}-test
+  add_executable(${PROJECT_NAME}_test
     test/test_grid_map_pcl.cpp
     test/GridMapPclLoaderTest.cpp
     test/HelpersTest.cpp
@@ -198,35 +155,44 @@ if(CATKIN_ENABLE_TESTING)
     test/test_helpers.cpp
     test/PointcloudCreator.cpp
   )
-  target_include_directories(${PROJECT_NAME}-test PRIVATE
+
+  target_include_directories(${PROJECT_NAME}_test PRIVATE
     include
   )
-  target_include_directories(${PROJECT_NAME}-test SYSTEM PUBLIC
-    ${catkin_INCLUDE_DIRS}
+
+  target_include_directories(${PROJECT_NAME}_test SYSTEM PUBLIC
     ${EIGEN3_INCLUDE_DIR}
     ${OpenMP_CXX_INCLUDE_DIRS}
   )
-  target_link_libraries(${PROJECT_NAME}-test 
+
+  target_link_libraries(${PROJECT_NAME}_test
     ${PROJECT_NAME}
-    ${catkin_LIBRARIES}
+    GTest::GTest
+    GTest::Main
+    pthread
   )
 
-  ###################
-  ## Code_coverage ##
-  ###################
-  find_package(cmake_code_coverage QUIET)
-  if(cmake_code_coverage_FOUND)
-    add_gtest_coverage(
-      TEST_BUILD_TARGETS
-        ${PROJECT_NAME}-test
-    )
-  endif()
+  include(GoogleTest)
+  gtest_discover_tests(${PROJECT_NAME}_test)
 endif()
 
-#################
-## Clang_tools ##
-#################
-find_package(cmake_clang_tools QUIET)
-if(cmake_clang_tools_FOUND)
-  add_default_clang_tooling()
-endif(cmake_clang_tools_FOUND)
+# Optional: Build example executables (if needed)
+option(BUILD_EXAMPLES "Build example programs" OFF)
+
+if(BUILD_EXAMPLES)
+  add_executable(grid_map_pcl_loader_example
+    examples/grid_map_pcl_loader_example.cpp
+  )
+  
+  target_include_directories(grid_map_pcl_loader_example PRIVATE
+    include
+  )
+  
+  target_link_libraries(grid_map_pcl_loader_example
+    ${PROJECT_NAME}
+  )
+  
+  install(TARGETS grid_map_pcl_loader_example
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+endif()

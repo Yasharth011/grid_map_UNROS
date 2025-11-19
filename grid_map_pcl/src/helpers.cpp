@@ -20,93 +20,105 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 
-#include <ros/console.h>
-#include <ros/package.h>
+// #include <ros/console.h>
+// #include <ros/package.h>
+#include <spdlog/spdlog.h>
 
 #include "grid_map_pcl/GridMapPclLoader.hpp"
 
 namespace grid_map {
 namespace grid_map_pcl {
 
-void setVerbosityLevelToDebugIfFlagSet(const ros::NodeHandle& nh) {
-  bool isSetVerbosityLevelToDebug;
-  nh.param<bool>("set_verbosity_to_debug", isSetVerbosityLevelToDebug, false);
+// void setVerbosityLevelToDebugIfFlagSet(const ros::NodeHandle& nh) {
+//   bool isSetVerbosityLevelToDebug;
+//   nh.param<bool>("set_verbosity_to_debug", isSetVerbosityLevelToDebug,
+//   false);
+//
+//   if (!isSetVerbosityLevelToDebug) {
+//     return;
+//   }
+//
+//   if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
+//   ros::console::levels::Debug)) {
+//     ros::console::notifyLoggerLevelsChanged();
+//   }
+// }
 
-  if (!isSetVerbosityLevelToDebug) {
-    return;
-  }
+// std::string getParameterPath(const ros::NodeHandle& nh) {
+//   std::string defaultPath = ros::package::getPath("grid_map_pcl") +
+//   "/config/parameters.yaml"; std::string pathToConfig;
+//   nh.param<std::string>("config_file_path", pathToConfig, defaultPath);
+//   return pathToConfig;
+// }
 
-  if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug)) {
-    ros::console::notifyLoggerLevelsChanged();
-  }
-}
+// std::string getOutputBagPath(const ros::NodeHandle& nh) {
+//   std::string pathToOutputBag;
+//   const std::string defaultPath = ros::package::getPath("grid_map_pcl") +
+//   "/data/output_grid_map.bag"; nh.param<std::string>("output_grid_map",
+//   pathToOutputBag, defaultPath); return pathToOutputBag;
+// }
 
-std::string getParameterPath(const ros::NodeHandle& nh) {
-  std::string defaultPath = ros::package::getPath("grid_map_pcl") + "/config/parameters.yaml";
-  std::string pathToConfig;
-  nh.param<std::string>("config_file_path", pathToConfig, defaultPath);
-  return pathToConfig;
-}
+// std::string getPcdFilePath(const ros::NodeHandle& nh) {
+//   std::string pathToCloud, folderPath;
+//   const std::string defaultPathToCloud = "/data/input_cloud.pcd";
+//   const std::string defaultFolderPath =
+//   ros::package::getPath("grid_map_pcl");
+//   nh.param<std::string>("pcd_filename", pathToCloud, defaultPathToCloud);
+//   nh.param<std::string>("folder_path", folderPath, defaultFolderPath);
+//   return folderPath + "/" + pathToCloud;
+// }
 
-std::string getOutputBagPath(const ros::NodeHandle& nh) {
-  std::string pathToOutputBag;
-  const std::string defaultPath = ros::package::getPath("grid_map_pcl") + "/data/output_grid_map.bag";
-  nh.param<std::string>("output_grid_map", pathToOutputBag, defaultPath);
-  return pathToOutputBag;
-}
+// std::string getMapFrame(const ros::NodeHandle& nh) {
+//   std::string mapFrame;
+//   nh.param<std::string>("map_frame", mapFrame, "map");
+//   return mapFrame;
+// }
 
-std::string getPcdFilePath(const ros::NodeHandle& nh) {
-  std::string pathToCloud, folderPath;
-  const std::string defaultPathToCloud = "/data/input_cloud.pcd";
-  const std::string defaultFolderPath = ros::package::getPath("grid_map_pcl");
-  nh.param<std::string>("pcd_filename", pathToCloud, defaultPathToCloud);
-  nh.param<std::string>("folder_path", folderPath, defaultFolderPath);
-  return folderPath + "/" + pathToCloud;
-}
+// std::string getMapRosbagTopic(const ros::NodeHandle& nh) {
+//   std::string mapRosbagTopic;
+//   nh.param<std::string>("map_rosbag_topic", mapRosbagTopic, "grid_map");
+//   return mapRosbagTopic;
+// }
 
-std::string getMapFrame(const ros::NodeHandle& nh) {
-  std::string mapFrame;
-  nh.param<std::string>("map_frame", mapFrame, "map");
-  return mapFrame;
-}
+// std::string getMapLayerName(const ros::NodeHandle& nh) {
+//   std::string mapLayerName;
+//   nh.param<std::string>("map_layer_name", mapLayerName, "elevation");
+//   return mapLayerName;
+// }
 
-std::string getMapRosbagTopic(const ros::NodeHandle& nh) {
-  std::string mapRosbagTopic;
-  nh.param<std::string>("map_rosbag_topic", mapRosbagTopic, "grid_map");
-  return mapRosbagTopic;
-}
+// void saveGridMap(const grid_map::GridMap& gridMap, const ros::NodeHandle& nh,
+// const std::string& mapTopic) {
+//   std::string pathToOutputBag = getOutputBagPath(nh);
+//   const bool savingSuccessful =
+//   grid_map::GridMapRosConverter::saveToBag(gridMap, pathToOutputBag,
+//   mapTopic); ROS_INFO_STREAM("Saving grid map successful: " << std::boolalpha
+//   << savingSuccessful);
+// }
 
-std::string getMapLayerName(const ros::NodeHandle& nh) {
-  std::string mapLayerName;
-  nh.param<std::string>("map_layer_name", mapLayerName, "elevation");
-  return mapLayerName;
-}
+// inline void printTimeElapsedToRosInfoStream(const
+// std::chrono::system_clock::time_point& start, const std::string& prefix) {
+//   const auto stop = std::chrono::high_resolution_clock::now();
+//   const auto duration =
+//   std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count()
+//   / 1000.0; ROS_INFO_STREAM(prefix << duration << " sec");
+// }
 
-void saveGridMap(const grid_map::GridMap& gridMap, const ros::NodeHandle& nh, const std::string& mapTopic) {
-  std::string pathToOutputBag = getOutputBagPath(nh);
-  const bool savingSuccessful = grid_map::GridMapRosConverter::saveToBag(gridMap, pathToOutputBag, mapTopic);
-  ROS_INFO_STREAM("Saving grid map successful: " << std::boolalpha << savingSuccessful);
-}
+// void processPointcloud(grid_map::GridMapPclLoader* gridMapPclLoader, const
+// ros::NodeHandle& nh) {
+//   const auto start = std::chrono::high_resolution_clock::now();
+//   gridMapPclLoader->preProcessInputCloud();
+//   gridMapPclLoader->initializeGridMapGeometryFromInputCloud();
+//   printTimeElapsedToRosInfoStream(start, "Initialization took: ");
+//   gridMapPclLoader->addLayerFromInputCloud(getMapLayerName(nh));
+//   printTimeElapsedToRosInfoStream(start, "Total time: ");
+// }
 
-inline void printTimeElapsedToRosInfoStream(const std::chrono::system_clock::time_point& start, const std::string& prefix) {
-  const auto stop = std::chrono::high_resolution_clock::now();
-  const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() / 1000.0;
-  ROS_INFO_STREAM(prefix << duration << " sec");
-}
-
-void processPointcloud(grid_map::GridMapPclLoader* gridMapPclLoader, const ros::NodeHandle& nh) {
-  const auto start = std::chrono::high_resolution_clock::now();
-  gridMapPclLoader->preProcessInputCloud();
-  gridMapPclLoader->initializeGridMapGeometryFromInputCloud();
-  printTimeElapsedToRosInfoStream(start, "Initialization took: ");
-  gridMapPclLoader->addLayerFromInputCloud(getMapLayerName(nh));
-  printTimeElapsedToRosInfoStream(start, "Total time: ");
-}
-
-Eigen::Affine3f getRigidBodyTransform(const Eigen::Vector3d& translation, const Eigen::Vector3d& intrinsicRpy) {
+Eigen::Affine3f getRigidBodyTransform(const Eigen::Vector3d &translation,
+                                      const Eigen::Vector3d &intrinsicRpy) {
   Eigen::Affine3f rigidBodyTransform;
   rigidBodyTransform.setIdentity();
-  rigidBodyTransform.translation() << translation.x(), translation.y(), translation.z();
+  rigidBodyTransform.translation() << translation.x(), translation.y(),
+      translation.z();
   Eigen::Matrix3f rotation(Eigen::Matrix3f::Identity());
   rotation *= getRotationMatrix(intrinsicRpy.x(), XYZ::X);
   rotation *= getRotationMatrix(intrinsicRpy.y(), XYZ::Y);
@@ -119,27 +131,27 @@ Eigen::Affine3f getRigidBodyTransform(const Eigen::Vector3d& translation, const 
 Eigen::Matrix3f getRotationMatrix(double angle, XYZ axis) {
   Eigen::Matrix3f rotationMatrix = Eigen::Matrix3f::Identity();
   switch (axis) {
-    case XYZ::X: {
-      rotationMatrix = Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitX());
-      break;
-    }
-    case XYZ::Y: {
-      rotationMatrix = Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY());
-      break;
-    }
-    case XYZ::Z: {
-      rotationMatrix = Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ());
-      break;
-    }
-    default:
-      ROS_ERROR("Unknown axis while trying to rotate the pointcloud");
+  case XYZ::X: {
+    rotationMatrix = Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitX());
+    break;
+  }
+  case XYZ::Y: {
+    rotationMatrix = Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitY());
+    break;
+  }
+  case XYZ::Z: {
+    rotationMatrix = Eigen::AngleAxisf(angle, Eigen::Vector3f::UnitZ());
+    break;
+  }
+  default:
+    spdlog::error("Unknown axis while trying to rotate the pointcloud");
   }
   return rotationMatrix;
 }
 
 Eigen::Vector3d calculateMeanOfPointPositions(Pointcloud::ConstPtr inputCloud) {
   Eigen::Vector3d mean = Eigen::Vector3d::Zero();
-  for (const auto& point : inputCloud->points) {
+  for (const auto &point : inputCloud->points) {
     mean += Eigen::Vector3d(point.x, point.y, point.z);
   }
   mean /= inputCloud->points.size();
@@ -147,7 +159,7 @@ Eigen::Vector3d calculateMeanOfPointPositions(Pointcloud::ConstPtr inputCloud) {
   return mean;
 }
 
-Pointcloud::Ptr loadPointcloudFromPcd(const std::string& filename) {
+Pointcloud::Ptr loadPointcloudFromPcd(const std::string &filename) {
   Pointcloud::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PCLPointCloud2 cloudBlob;
   pcl::io::loadPCDFile(filename, cloudBlob);
@@ -155,7 +167,8 @@ Pointcloud::Ptr loadPointcloudFromPcd(const std::string& filename) {
   return cloud;
 }
 
-Pointcloud::Ptr transformCloud(Pointcloud::ConstPtr inputCloud, const Eigen::Affine3f& transformMatrix) {
+Pointcloud::Ptr transformCloud(Pointcloud::ConstPtr inputCloud,
+                               const Eigen::Affine3f &transformMatrix) {
   Pointcloud::Ptr transformedCloud(new Pointcloud());
   pcl::transformPointCloud(*inputCloud, *transformedCloud, transformMatrix);
   return transformedCloud;

@@ -9,7 +9,7 @@
 #pragma once
 
 #include <pcl/common/common.h>
-#include <ros/ros.h>
+// #include <ros/ros.h>
 #include <chrono>
 #include <string>
 
@@ -20,21 +20,21 @@ class GridMap;
 
 namespace grid_map_pcl {
 
-void setVerbosityLevelToDebugIfFlagSet(const ros::NodeHandle& nh);
-
-std::string getParameterPath(const ros::NodeHandle& nh);
-
-std::string getOutputBagPath(const ros::NodeHandle& nh);
-
-std::string getPcdFilePath(const ros::NodeHandle& nh);
-
-std::string getMapFrame(const ros::NodeHandle& nh);
-
-std::string getMapRosbagTopic(const ros::NodeHandle& nh);
-
-std::string getMapLayerName(const ros::NodeHandle& nh);
-
-void saveGridMap(const grid_map::GridMap& gridMap, const ros::NodeHandle& nh, const std::string& mapTopic);
+// void setVerbosityLevelToDebugIfFlagSet(const ros::NodeHandle& nh);
+//
+// std::string getParameterPath(const ros::NodeHandle& nh);
+//
+// std::string getOutputBagPath(const ros::NodeHandle& nh);
+//
+// std::string getPcdFilePath(const ros::NodeHandle& nh);
+//
+// std::string getMapFrame(const ros::NodeHandle& nh);
+//
+// std::string getMapRosbagTopic(const ros::NodeHandle& nh);
+//
+// std::string getMapLayerName(const ros::NodeHandle& nh);
+//
+// void saveGridMap(const grid_map::GridMap& gridMap, const ros::NodeHandle& nh, const std::string& mapTopic);
 
 inline void printTimeElapsedToRosInfoStream(const std::chrono::system_clock::time_point& start, const std::string& prefix);
 
