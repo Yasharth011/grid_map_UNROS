@@ -1,19 +1,16 @@
 cmake_minimum_required(VERSION 3.5.1)
-project(grid_map_core)
+project(grid_map_core VERSION 1.0.0)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wextra -Wpedantic)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-## Find catkin macros and libraries
-find_package(catkin REQUIRED)
+###########
+## Eigen ##
+###########
 
-## Define Eigen addons. 
-include(cmake/${PROJECT_NAME}-extras.cmake)
-
-## System dependencies are found with CMake's conventions
-#find_package(Eigen3 REQUIRED)
-# Solution to find Eigen3 with Saucy.
+# Find Eigen3
 find_package(Eigen3 QUIET)
 if(NOT EIGEN3_FOUND)
   find_package(PkgConfig REQUIRED)
@@ -21,41 +18,14 @@ if(NOT EIGEN3_FOUND)
   set(EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIRS})
 endif()
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-  INCLUDE_DIRS
-    include
-    ${EIGEN3_INCLUDE_DIR}
-  LIBRARIES
-    ${PROJECT_NAME}
-  CATKIN_DEPENDS
-  DEPENDS
-    #Eigen3
-  CFG_EXTRAS
-    ${PROJECT_NAME}-extras.cmake
-)
+# Define Eigen addons
+include(cmake/${PROJECT_NAME}-extras.cmake)
 
 ###########
 ## Build ##
 ###########
 
-## Specify additional locations of header files
-include_directories(
-  include
-  SYSTEM
-    ${catkin_INCLUDE_DIRS}
-    ${EIGEN3_INCLUDE_DIR}
-)
-
-## Declare a cpp library
+# Create library
 add_library(${PROJECT_NAME}
    src/GridMap.cpp
    src/GridMapMath.cpp
@@ -73,44 +43,114 @@ add_library(${PROJECT_NAME}
    src/iterators/SlidingWindowIterator.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}
-  ${catkin_LIBRARIES}
+# Add alias for namespaced usage
+add_library(grid_map::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIR}>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:include/eigen3>
+)
+
+# Set library properties
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION ${PROJECT_VERSION_MAJOR}
+  POSITION_INDEPENDENT_CODE ON
 )
 
 #############
 ## Install ##
 #############
 
-# Mark executables and/or libraries for installation
+include(GNUInstallDirs)
+
+# Install library
 install(
   TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  EXPORT ${PROJECT_NAME}Targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-# Mark cpp header files for installation
+# Install headers
 install(
   DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.hpp"
 )
 
-# Mark other files for installation
+# Install documentation
 install(
   DIRECTORY doc
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+  OPTIONAL
+)
+
+# Install cmake extras
+install(
+  FILES cmake/${PROJECT_NAME}-extras.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
+
+# Export targets
+install(
+  EXPORT ${PROJECT_NAME}Targets
+  FILE ${PROJECT_NAME}Targets.cmake
+  NAMESPACE grid_map::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
+
+# Create package config files
+include(CMakePackageConfigHelpers)
+
+# Generate the config file
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+)
+
+# Generate version file
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+
+# Install config files
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
+
+# Export from build tree (allows other projects to use without installing)
+export(
+  EXPORT ${PROJECT_NAME}Targets
+  FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake
+  NAMESPACE grid_map::
 )
 
 #############
 ## Testing ##
 #############
 
-if(CATKIN_ENABLE_TESTING)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+option(BUILD_TESTING "Build tests" OFF)
 
-  ## Add gtest based cpp test target and link libraries
-  catkin_add_gtest(${PROJECT_NAME}-test
+if(BUILD_TESTING)
+  enable_testing()
+  
+  # Find GTest
+  find_package(GTest REQUIRED)
+  
+  # Add test executable
+  add_executable(${PROJECT_NAME}_test
     test/test_grid_map_core.cpp
     test/test_helpers.cpp
     test/CubicConvolutionInterpolationTest.cpp
@@ -127,35 +167,77 @@ if(CATKIN_ENABLE_TESTING)
     test/SpiralIteratorTest.cpp
     test/SlidingWindowIteratorTest.cpp
   )
-  target_include_directories(${PROJECT_NAME}-test PRIVATE
+  
+  target_include_directories(${PROJECT_NAME}_test PRIVATE
     include
-  )
-  target_include_directories(${PROJECT_NAME}-test SYSTEM PUBLIC
-    ${catkin_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
   )
-  target_link_libraries(${PROJECT_NAME}-test
+  
+  target_link_libraries(${PROJECT_NAME}_test
     ${PROJECT_NAME}
+    GTest::GTest
+    GTest::Main
+    pthread
   )
-
-  ###################
-  ## Code_coverage ##
-  ###################
+  
+  # Discover tests
+  include(GoogleTest)
+  gtest_discover_tests(${PROJECT_NAME}_test)
+  
+  # Code coverage (optional)
   find_package(cmake_code_coverage QUIET)
   if(cmake_code_coverage_FOUND)
     add_gtest_coverage(
-      TEST_BUILD_TARGETS
-        ${PROJECT_NAME}-test
+      TEST_BUILD_TARGETS ${PROJECT_NAME}_test
+    )
+  endif()
+endif()
+
+###########
+## Doxygen (optional) ##
+###########
+
+option(BUILD_DOCUMENTATION "Build API documentation with Doxygen" OFF)
+
+if(BUILD_DOCUMENTATION)
+  find_package(Doxygen)
+  if(DOXYGEN_FOUND)
+    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+    set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+    
+    configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+    
+    add_custom_target(doc_doxygen ALL
+      COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating API documentation with Doxygen"
+      VERBATIM
     )
   endif()
 endif()
 
 #################
-## Clang_tools ##
+## Clang Tools ##
 #################
+
 find_package(cmake_clang_tools QUIET)
 if(cmake_clang_tools_FOUND)
   add_default_clang_tooling(
     DISABLE_CLANG_FORMAT
   )
-endif(cmake_clang_tools_FOUND)
+endif()
+
+#################
+## Print Summary ##
+#################
+
+message(STATUS "")
+message(STATUS "==================== ${PROJECT_NAME} Configuration ====================")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "Eigen3 include dir: ${EIGEN3_INCLUDE_DIR}")
+message(STATUS "Build testing: ${BUILD_TESTING}")
+message(STATUS "Build documentation: ${BUILD_DOCUMENTATION}")
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "========================================================================")
+message(STATUS "")
