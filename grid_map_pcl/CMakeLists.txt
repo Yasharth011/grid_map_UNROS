@@ -42,6 +42,9 @@ find_package(yaml-cpp REQUIRED)
 # Find grid_map_core (assuming it's installed or available)
 find_package(grid_map_core REQUIRED)
 
+# Find spdlog
+find_package(spdlog REQUIRED)
+
 ###########
 ## Build ##
 ###########
