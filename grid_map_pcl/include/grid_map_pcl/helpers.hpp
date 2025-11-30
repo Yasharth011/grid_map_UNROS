@@ -38,7 +38,7 @@ namespace grid_map_pcl {
 
 inline void printTimeElapsedToRosInfoStream(const std::chrono::system_clock::time_point& start, const std::string& prefix);
 
-void processPointcloud(grid_map::GridMapPclLoader* gridMapPclLoader, const ros::NodeHandle& nh);
+// void processPointcloud(grid_map::GridMapPclLoader* gridMapPclLoader, const ros::NodeHandle& nh);
 
 using Point = ::pcl::PointXYZ;
 using Pointcloud = ::pcl::PointCloud<Point>;
